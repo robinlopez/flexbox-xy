@@ -1,0 +1,21 @@
+// =============================================================================
+// Gridaflex, docs build entry
+// -----------------------------------------------------------------------------
+// Compiles the full library WITH named gutter sizes enabled, so the interactive
+// builder demo (data-gutters="default,sm,lg") renders real spacing.
+//   sass docs/gridaflex.docs.scss docs/assets/gridaflex.css
+// =============================================================================
+
+@use '../src/settings' with (
+  $gutters: (
+    'default': ('phone': 16px, 'tablet-portrait': 24px),
+    'sm': 8px,
+    'lg': 32px,
+  ),
+  $padding-gutters: (
+    'default': ('phone': 16px, 'tablet-portrait': 24px),
+    'sm': 8px,
+    'lg': 32px,
+  ),
+);
+@use '../src/classes';
