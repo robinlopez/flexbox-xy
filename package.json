@@ -1,0 +1,65 @@
+{
+  "name": "gridaflex",
+  "version": "1.0.0",
+  "description": "Gridaflex — système de mise en page flexbox à axes X/Y, sur un moteur gap sans marges négatives. Hérité de la grille Foundation XY, modernisé.",
+  "keywords": [
+    "css",
+    "scss",
+    "sass",
+    "flexbox",
+    "gap",
+    "layout",
+    "responsive",
+    "xy",
+    "foundation"
+  ],
+  "author": "4SH",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robinlopez/gridaflex.git"
+  },
+  "homepage": "https://robinlopez.github.io/gridaflex/",
+  "bugs": {
+    "url": "https://github.com/robinlopez/gridaflex/issues"
+  },
+  "type": "module",
+  "main": "dist/gridaflex.css",
+  "style": "dist/gridaflex.css",
+  "sass": "index.scss",
+  "exports": {
+    ".": {
+      "sass": "./index.scss",
+      "style": "./dist/gridaflex.css",
+      "default": "./dist/gridaflex.css"
+    },
+    "./scss": "./index.scss",
+    "./classes": "./src/_classes.scss",
+    "./src/*": "./src/*",
+    "./css": "./dist/gridaflex.css",
+    "./css/min": "./dist/gridaflex.min.css"
+  },
+  "files": [
+    "src",
+    "index.scss",
+    "gridaflex.scss",
+    "gridaflex.config.example.scss",
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "llms.txt",
+    "gridaflex.skill.md"
+  ],
+  "scripts": {
+    "build": "npm run build:css && npm run build:min",
+    "build:css": "sass gridaflex.scss dist/gridaflex.css",
+    "build:min": "sass gridaflex.scss dist/gridaflex.min.css --style=compressed --no-source-map",
+    "watch": "sass --watch gridaflex.scss dist/gridaflex.css",
+    "docs:css": "sass docs/gridaflex.docs.scss docs/assets/gridaflex.css",
+    "docs:build": "npm run docs:css && zensical build",
+    "docs:serve": "npm run docs:css && zensical serve --open"
+  },
+  "devDependencies": {
+    "sass": "^1.69.0"
+  }
+}

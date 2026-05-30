@@ -1,0 +1,30 @@
+# Gridaflex
+
+> Système de mise en page **flexbox** à axes **X / Y** : des pistes horizontales ou verticales (`flex-x` / `flex-y`) remplies de cellules (`cell`), sur un moteur `gap` moderne (`column-gap` / `row-gap`), sans marges ni paddings négatifs. Reprend l'API de la grille XY de Foundation, modernisée. Préfixe des classes : `flex-` (ce n'est pas CSS Grid).
+
+Points clés pour générer du code correct :
+
+- Conteneur `.flex-container` → piste `.flex-x` / `.flex-y` → cellules `.cell` avec une taille `[breakpoint]-[n]` (n de 1 à `$flex-columns`, 12 par défaut).
+- La **taille** (`desktop-4`) se met sur la **cellule** ; la **gouttière** (`flex-gap-x`) se met sur la **piste**.
+- Gouttières par axe : `flex-gap-x` (horizontal), `flex-gap-y` (vertical), `flex-gap-xy` (les deux). Padding interne : `flex-padding-x/y/xy`.
+- Mobile-first ; premier breakpoint = 0 ; breakpoints par défaut : phone, tablet-portrait (600), tablet-landscape (900), desktop (1200), medium-desktop (1440), big-desktop (1800) — tous renommables en config.
+- Largeurs gap-aware : `calc(f·100% − (1−f)·gap)`. Surcharge ponctuelle via `--flex-gap-x` / `--flex-gap-y`.
+- Config Sass : `@use 'gridaflex/src/settings' with (…)` PUIS `@use 'gridaflex/src/classes'`, dans le même fichier d'entrée.
+- Alias dépréciés (compat Foundation, à éviter en code neuf) : `grid-*`, `flex-margin-*`, `xy-grid-*`.
+
+## Ressource principale
+
+- [Skill complet (cheatsheet, règles, exemples)](gridaflex.skill.md) : guide prêt à embarquer dans un projet pour un assistant IA.
+
+## Documentation
+
+- [README](README.md) : présentation, moteur, installation, classes
+- [Démarrage & configuration](docs/demarrage.md)
+- [La grille (pistes, cellules, tailles)](docs/grille.md)
+- [Gouttières & axes](docs/gouttieres.md)
+- [Responsive & breakpoints](docs/responsive.md)
+- [Alignement](docs/alignement.md)
+- [Visibilité responsive](docs/visibilite.md)
+- [API Sass (mixins & fonctions)](docs/api-sass.md)
+- [Migration depuis Foundation XY](docs/migration.md)
+- [Releases](docs/releases.md)

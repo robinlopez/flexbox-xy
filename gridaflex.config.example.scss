@@ -1,0 +1,59 @@
+// =============================================================================
+// Gridaflex — Fichier de configuration (équivalent de `foundation-variables`)
+// -----------------------------------------------------------------------------
+// Copiez ce fichier dans votre projet (ex. `_gridaflex-settings.scss`) puis
+// importez-le À LA PLACE de `gridaflex.scss`. Tout passe par `@use … with (…)`,
+// donc CE FICHIER doit être le SEUL point d'entrée qui configure les settings.
+//
+//   // dans votre bundle principal :
+//   @use 'gridaflex-settings';   // ← ce fichier, qui émet déjà toutes les classes
+//
+// =============================================================================
+
+// 1) On configure les réglages AVANT toute autre utilisation du module.
+@use 'gridaflex/src/settings' with (
+  // --- Sémantique des breakpoints -----------------------------------------
+  // Renommez librement. Le 1er DOIT valoir 0. Les classes de grille et le
+  // mixin breakpoint() sont générés à partir de ces noms.
+  $breakpoints: (
+    'phone': 0,
+    'tablet-portrait': 600px,
+    'tablet-landscape': 900px,
+    'desktop': 1200px,
+    'medium-desktop': 1440px,
+    'big-desktop': 1800px,
+  ),
+
+  // Quels breakpoints génèrent des classes (.phone-12, .desktop-6, …).
+  // Doit être un sous-ensemble des clés de $breakpoints.
+  $breakpoint-classes: (phone tablet-portrait tablet-landscape desktop medium-desktop big-desktop),
+
+  // --- Grille ---------------------------------------------------------------
+  $flex-columns: 24,
+  $flex-container: 100%,
+  $flex-margin-gutters: (
+    'phone': 16px,
+    'tablet-portrait': 16px,
+    'desktop': 24px,
+  ),
+  // $flex-padding-gutters: hérite de $flex-margin-gutters par défaut
+
+  // --- Tailles de gouttières nommées (optionnel) ---------------------------
+  // `default` alimente flex-gap-x/y/xy ; chaque autre clé émet
+  // flex-gap-{size}-{axis} + les variantes responsive {bp}-flex-gap-{size}-{axis}.
+  // Une valeur peut être une longueur OU une map par breakpoint. Ne JAMAIS
+  // nommer une taille `x`, `y` ou `xy` (réservés aux axes).
+  $gutters: (
+    'default': ('phone': 16px, 'tablet-portrait': 16px, 'desktop': 24px),
+    'sm': 8px,
+    'lg': 32px,
+  ),
+  // $padding-gutters: idem pour flex-padding-{size}-{axis}
+);
+
+// 2) On émet toutes les classes (la config ci-dessus est partagée).
+@use 'gridaflex/src/classes';
+
+// 3) (optionnel) Accès à l'API sémantique sous un alias dans VOS fichiers :
+//    @use 'gridaflex' as flex;
+//    .layout { @include flex.breakpoint(tablet-portrait only) { … } }

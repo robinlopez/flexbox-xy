@@ -1,0 +1,306 @@
+// =============================================================================
+// Gridaflex — Class output
+// -----------------------------------------------------------------------------
+// A flexbox layout system with X/Y axes. Class prefix: `flex-`.
+// The active gutter lives in CSS custom properties (--flex-gap-x / --flex-gap-y
+// / --flex-pad) read directly by the cell calc(), so there are NO per-cell size
+// overrides per gutter type, and responsive gutters update automatically.
+// =============================================================================
+
+@use 'sass:map';
+@use 'sass:list';
+@use 'sass:meta';
+@use 'settings' as *;
+@use 'functions' as *;
+@use 'breakpoints' as *;
+@use 'mixins' as *;
+@use 'visibility' as vis;
+
+// -----------------------------------------------------------------------------
+// Containers
+// -----------------------------------------------------------------------------
+
+.flex-container {
+  @include xy-flex-container;
+
+  &.fluid { max-width: none; }
+  &.full {
+    max-width: none;
+    padding-inline: 0;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Flex tracks (the grid itself)
+// -----------------------------------------------------------------------------
+
+.flex-x { @include xy-flex(horizontal); }
+.flex-y { @include xy-flex(vertical); } // needs a height to distribute cells
+
+// --- Gap gutters (PREFERRED naming) ------------------------------------------
+// `flex-gap-x` = horizontal gap (column-gap), `flex-gap-y` = vertical gap
+// (row-gap), `flex-gap` / `flex-gap-xy` = both. The `flex-margin-*` names are
+// kept as backward-compatible aliases (same behaviour).
+//
+// Named sizes (from $gutters): the `default` size drives the suffix-less
+// classes; every other key emits `flex-gap-{size}-{axis}` and, per breakpoint,
+// `{bp}-flex-gap-{size}-{axis}`. Sizes whose value is a per-breakpoint map are
+// responsive on their own, so they don't get `{bp}-` variants.
+
+// Default size + legacy `flex-margin-*` aliases.
+$-gap-default: map.get($gutters, 'default');
+.flex-gap-x,
+.flex-margin-x { @include xy-flex-margin(x, $-gap-default); }
+
+.flex-gap-y,
+.flex-margin-y { @include xy-flex-margin(y, $-gap-default); }
+
+.flex-gap,
+.flex-gap-xy,
+.flex-margin-xy { @include xy-flex-margin(xy, $-gap-default); }
+
+// Named sizes (base, all viewports).
+@each $size, $value in $gutters {
+  @if $size != 'default' {
+    .flex-gap-#{$size}-x  { @include xy-flex-margin(x,  $value); }
+    .flex-gap-#{$size}-y  { @include xy-flex-margin(y,  $value); }
+    .flex-gap-#{$size},
+    .flex-gap-#{$size}-xy { @include xy-flex-margin(xy, $value); }
+  }
+}
+
+// --- Padding gutters ---------------------------------------------------------
+$-pad-default: map.get($padding-gutters, 'default');
+.flex-padding-x  { @include xy-flex-padding(x,  $-pad-default); }
+.flex-padding-y  { @include xy-flex-padding(y,  $-pad-default); }
+.flex-padding-xy { @include xy-flex-padding(xy, $-pad-default); }
+
+@each $size, $value in $padding-gutters {
+  @if $size != 'default' {
+    .flex-padding-#{$size}-x  { @include xy-flex-padding(x,  $value); }
+    .flex-padding-#{$size}-y  { @include xy-flex-padding(y,  $value); }
+    .flex-padding-#{$size}-xy { @include xy-flex-padding(xy, $value); }
+  }
+}
+
+// --- Responsive gutter sizes: {bp}-flex-gap|padding-{size}-{axis} ------------
+// Apply a gutter size from a breakpoint up. Only scalar-valued sizes get these
+// variants (map-valued sizes are already responsive on their own). The
+// suffix is empty for `default`, `-{size}` otherwise.
+@each $bp in $breakpoint-classes {
+  @include breakpoint($bp) {
+    @each $size, $value in $gutters {
+      @if meta.type-of($value) != 'map' {
+        $sfx: gx-if($size == 'default', '', '-#{$size}');
+        .#{$bp}-flex-gap#{$sfx}-x  { @include xy-flex-margin(x,  $value); }
+        .#{$bp}-flex-gap#{$sfx}-y  { @include xy-flex-margin(y,  $value); }
+        .#{$bp}-flex-gap#{$sfx},
+        .#{$bp}-flex-gap#{$sfx}-xy { @include xy-flex-margin(xy, $value); }
+      }
+    }
+    @each $size, $value in $padding-gutters {
+      @if meta.type-of($value) != 'map' {
+        $sfx: gx-if($size == 'default', '', '-#{$size}');
+        .#{$bp}-flex-padding#{$sfx}-x  { @include xy-flex-padding(x,  $value); }
+        .#{$bp}-flex-padding#{$sfx}-y  { @include xy-flex-padding(y,  $value); }
+        .#{$bp}-flex-padding#{$sfx}-xy { @include xy-flex-padding(xy, $value); }
+      }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Base cell
+// -----------------------------------------------------------------------------
+
+.cell {
+  @include xy-cell-base(full);
+  // `width` is intentionally NOT set here so that breakpoint-scoped
+  // `auto` / `shrink` classes (e.g. `.phone-auto`) can freely set
+  // `width: auto` without being overridden by a base-level `width: 100%`.
+  // Numeric size rules (.phone-4, etc.) set `width` themselves via
+  // xy-cell-size / xy-cell-base.
+  width: 100%;
+  min-width: 0;
+}
+
+// --- Base (prefix-less) auto / shrink — apply at every viewport -------------
+.auto {
+  flex: 1 1 0 !important;
+  width: auto !important;
+}
+.shrink {
+  flex: 0 0 auto !important;
+  width: auto !important;
+}
+
+// -----------------------------------------------------------------------------
+// Sizing / offsets / block grids / order — per breakpoint
+// -----------------------------------------------------------------------------
+
+@each $bp in $breakpoint-classes {
+  @include breakpoint($bp) {
+
+    // ---- Horizontal sizes (inside .flex-x) ------------------------------
+    // auto/shrink must override the `.cell { width: 100% }` base rule.
+    // Using `!important` on the flex shorthand and width is the safest way
+    // to guarantee the override regardless of source order in the compiled CSS.
+    .#{$bp}-auto {
+      flex: 1 1 0 !important;
+      width: auto !important;
+    }
+    .#{$bp}-shrink {
+      flex: 0 0 auto !important;
+      width: auto !important;
+    }
+
+    @for $i from 1 through $flex-columns {
+      .#{$bp}-#{$i} {
+        @include xy-cell-base(full);
+        @include xy-cell-size($i); // width: calc(% − share·--flex-gap-x)
+      }
+    }
+
+    // ---- Vertical sizes (inside .flex-y) --------------------------------
+    .flex-y {
+      > .#{$bp}-auto {
+        flex: 1 1 0 !important;
+        width: auto !important;
+        height: auto;
+      }
+      > .#{$bp}-shrink {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        height: auto;
+      }
+      @for $i from 1 through $flex-columns {
+        > .#{$bp}-#{$i} {
+          @include xy-cell-size($i, $vertical: true); // height: calc(% − share·--flex-gap-y)
+          width: auto;
+        }
+      }
+    }
+
+    // ---- Offsets --------------------------------------------------------
+    @for $i from 1 through $flex-columns - 1 {
+      .#{$bp}-offset-#{$i} { @include xy-cell-offset($i); }
+    }
+    // Offsets are an X-axis feature: neutralise them in vertical tracks.
+    .flex-y > [class*='#{$bp}-offset-'] { margin-left: 0; }
+
+    // ---- Block grid: N cells per row -----------------------------------
+    @for $n from 1 through $xy-block-flex-max {
+      .#{$bp}-up-#{$n} { @include xy-flex-layout($n); }
+    }
+
+    // ---- Order ----------------------------------------------------------
+    @for $i from 0 through $flex-columns {
+      .#{$bp}-order-#{$i} { order: $i; }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Collapse: remove gutters from a breakpoint up
+// `[bp]-gap-collapse` is the preferred name; `[bp]-margin-collapse` is an alias.
+// -----------------------------------------------------------------------------
+
+@each $bp in $breakpoint-classes {
+  @include breakpoint($bp) {
+    .#{$bp}-gap-collapse,
+    .#{$bp}-margin-collapse {
+      --flex-gap-x: 0px;
+      --flex-gap-y: 0px;
+      column-gap: 0;
+      row-gap: 0;
+    }
+    .#{$bp}-padding-collapse {
+      --flex-pad: 0px;
+      > .cell { padding: 0; }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Frame & cell blocks
+// -----------------------------------------------------------------------------
+
+.flex-frame { @include xy-flex-frame(false); }
+.flex-y.flex-frame { @include xy-flex-frame(true); }
+.cell-block-container { @include xy-cell-block-container; }
+.cell-block { @include xy-cell-block(false); }
+.cell-block-y { @include xy-cell-block(true); }
+
+@each $bp in $breakpoint-classes {
+  @if $bp != list.nth(map.keys($breakpoints), 1) {
+    @include breakpoint($bp) {
+      .#{$bp}-flex-frame { @include xy-flex-frame(false); }
+      .flex-y.#{$bp}-flex-frame { @include xy-flex-frame(true); }
+      .#{$bp}-cell-block { @include xy-cell-block(false); }
+      .#{$bp}-cell-block-y { @include xy-cell-block(true); }
+      .#{$bp}-cell-block-container { @include xy-cell-block-container; }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Alignment (parent)
+// -----------------------------------------------------------------------------
+
+.align-left    { @include flex-align(left); }
+.align-right   { @include flex-align(right); }
+.align-center  { @include flex-align(center); }
+.align-justify { @include flex-align(justify); }
+.align-spaced  { @include flex-align(spaced); }
+
+.align-top     { @include flex-align($y: top); }
+.align-middle  { @include flex-align($y: middle); }
+.align-bottom  { @include flex-align($y: bottom); }
+.align-stretch { @include flex-align($y: stretch); }
+
+.align-center-middle {
+  @include flex-align(center, middle);
+  align-content: center;
+}
+
+// Alignment (self)
+.align-self-top     { @include flex-align-self(top); }
+.align-self-middle  { @include flex-align-self(middle); }
+.align-self-bottom  { @include flex-align-self(bottom); }
+.align-self-stretch { @include flex-align-self(stretch); }
+
+// -----------------------------------------------------------------------------
+// Vanilla flex helpers
+// `.flex-box` enables display:flex (renamed from Foundation's `.flex-container`
+// to avoid clashing with the layout container `.flex-container` above).
+// -----------------------------------------------------------------------------
+
+.flex-box { display: flex; }
+.flex-dir-row { flex-direction: row; }
+.flex-dir-row-reverse { flex-direction: row-reverse; }
+.flex-dir-column { flex-direction: column; }
+.flex-dir-column-reverse { flex-direction: column-reverse; }
+.flex-child-auto { flex: 1 1 auto; }
+.flex-child-grow { flex: 1 0 auto; }
+.flex-child-shrink { flex: 0 1 auto; }
+
+@each $bp in $breakpoint-classes {
+  @if $bp != list.nth(map.keys($breakpoints), 1) {
+    @include breakpoint($bp) {
+      .#{$bp}-flex-box { display: flex; }
+      .#{$bp}-flex-dir-row { flex-direction: row; }
+      .#{$bp}-flex-dir-row-reverse { flex-direction: row-reverse; }
+      .#{$bp}-flex-dir-column { flex-direction: column; }
+      .#{$bp}-flex-dir-column-reverse { flex-direction: column-reverse; }
+      .#{$bp}-flex-child-auto { flex: 1 1 auto; }
+      .#{$bp}-flex-child-grow { flex: 1 0 auto; }
+      .#{$bp}-flex-child-shrink { flex: 0 1 auto; }
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Responsive visibility
+// -----------------------------------------------------------------------------
+
+@include vis.gx-visibility-classes;

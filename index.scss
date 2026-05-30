@@ -1,0 +1,17 @@
+// =============================================================================
+// Gridaflex — Sass API entry point
+// -----------------------------------------------------------------------------
+// Use this when you want the mixins/functions to build a *semantic* layout:
+//
+//   @use 'gridaflex' as flex;
+//   .gallery { @include flex.xy-flex; @include flex.xy-flex-layout(3, '.item'); }
+//
+// To emit the full set of utility classes instead, compile `gridaflex.scss`
+// (or `@use 'gridaflex/src/classes';` from your own bundle).
+// =============================================================================
+
+@forward 'src/settings';
+@forward 'src/functions';
+@forward 'src/breakpoints';
+@forward 'src/mixins';
+@forward 'src/visibility';

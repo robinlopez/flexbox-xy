@@ -1,0 +1,16 @@
+# Build output
+/site/
+node_modules/
+
+# Python (docs toolchain)
+.venv/
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+
+# IDE / éditeurs
+.idea/
+.vscode/
+.claude/

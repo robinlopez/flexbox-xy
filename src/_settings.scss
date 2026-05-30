@@ -1,0 +1,111 @@
+// =============================================================================
+// Gridaflex — Settings
+// -----------------------------------------------------------------------------
+// All variables use `!default` so they can be overridden before the import.
+// Preferred names use the `$flex-*` prefix (it's a flexbox system, not CSS
+// Grid). The legacy `$grid-*` names are kept as deprecated aliases so existing
+// `@use … with ($grid-columns: …)` configs keep compiling — each preferred
+// variable derives from its legacy counterpart, so configuring either works.
+// Breakpoints default to semantic device names (phone … big-desktop).
+// =============================================================================
+
+@use 'sass:map';
+
+// -----------------------------------------------------------------------------
+// Deprecated legacy names (configure the `$flex-*` names below instead).
+// Declared first so a `with ($grid-*: …)` override flows into the new names.
+// -----------------------------------------------------------------------------
+$grid-container: 1200px !default;
+$grid-columns: 12 !default;
+$grid-margin-gutters: (
+  'phone': 16px,
+  'tablet-portrait': 24px,
+) !default;
+$grid-padding-gutters: $grid-margin-gutters !default;
+$grid-container-padding: $grid-padding-gutters !default;
+$xy-block-grid-max: 8 !default;
+
+// -----------------------------------------------------------------------------
+// Preferred names ($flex-*) — derive from the legacy names if those were set.
+// -----------------------------------------------------------------------------
+
+/// Maximum width of a flex container.
+$flex-container: $grid-container !default;
+
+/// Number of columns in the layout.
+$flex-columns: $grid-columns !default;
+
+/// Gutters used by the *margin* grid (`gap`), per breakpoint.
+/// This is the value of the `default` gutter size (see `$gutters`).
+$flex-margin-gutters: $grid-margin-gutters !default;
+
+/// Gutters used by the *padding* grid (inner padding), per breakpoint.
+/// This is the value of the `default` padding size (see `$padding-gutters`).
+$flex-padding-gutters: $grid-padding-gutters !default;
+
+/// Padding applied to `.flex-container`.
+$flex-container-padding: $grid-container-padding !default;
+
+/// Maximum number of cells per row for a block grid (`.{bp}-up-{n}`).
+$xy-block-flex-max: $xy-block-grid-max !default;
+
+// -----------------------------------------------------------------------------
+// Breakpoints
+// -----------------------------------------------------------------------------
+
+/// Named breakpoints. The first one MUST be 0.
+/// Semantic, device-oriented names by default. Rename them freely: the grid
+/// classes and the `breakpoint()` mixin are generated from these names.
+$breakpoints: (
+  'phone': 0,
+  'tablet-portrait': 600px,
+  'tablet-landscape': 900px,
+  'desktop': 1200px,
+  'medium-desktop': 1440px,
+  'big-desktop': 1800px,
+) !default;
+
+/// HiDPI / resolution breakpoints, usable with `breakpoint(retina)`.
+$breakpoints-hidpi: (
+  'hidpi-1': 1,
+  'hidpi-1-5': 1.5,
+  'hidpi-2': 2,
+  'retina': 2,
+  'hidpi-3': 3,
+) !default;
+
+/// Which breakpoints generate utility classes (phone-6, desktop-4, …).
+/// MUST be a subset of $breakpoints' keys.
+$breakpoint-classes: (phone tablet-portrait tablet-landscape desktop medium-desktop big-desktop) !default;
+
+/// Largest named breakpoint that also emits a `print` media type.
+/// Set to `null` to disable print handling (recommended with custom names).
+$print-breakpoint: null !default;
+
+// -----------------------------------------------------------------------------
+// Named gutter sizes (à la breakpoints map)
+// -----------------------------------------------------------------------------
+
+/// Named gutter sizes for the *margin* grid (`gap`).
+/// The `default` key drives the suffix-less classes (`flex-gap-x`, …); every
+/// other key emits `flex-gap-{size}-{axis}` plus the responsive variants
+/// `{bp}-flex-gap-{size}-{axis}`. A value may be a single length OR a
+/// per-breakpoint map (responsive). Reserved names — never use `x`/`y`/`xy`.
+///
+///   $gutters: ('default': 16px, 'sm': 8px, 'lg': 32px);
+$gutters: (
+  'default': $flex-margin-gutters,
+) !default;
+
+/// Named gutter sizes for the *padding* grid (inner padding). Same rules as
+/// `$gutters`: `default` → `flex-padding-{axis}`, others →
+/// `flex-padding-{size}-{axis}` + `{bp}-flex-padding-{size}-{axis}`.
+$padding-gutters: (
+  'default': $flex-padding-gutters,
+) !default;
+
+// The active gutters live in CSS custom properties, settable per instance:
+//   --flex-gap-x : horizontal gap (column-gap + cell width)
+//   --flex-gap-y : vertical gap   (row-gap + cell height)
+//   --flex-pad   : padding-grid inner padding
+// They default to 0, so a plain `.flex-x` cell width reduces to a clean %.

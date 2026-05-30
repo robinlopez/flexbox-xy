@@ -1,0 +1,70 @@
+// =============================================================================
+// Grid XY — Functions
+// =============================================================================
+
+@use 'sass:list';
+@use 'sass:math';
+@use 'sass:map';
+@use 'sass:meta';
+@use 'settings' as *;
+
+/// Ternary helper — replaces the deprecated Sass `if()` function with plain
+/// `@if`/`@else` control flow. Works on every Sass version and never triggers
+/// the `if-function` deprecation (Dart Sass ≥ 1.95).
+/// Note: arguments are eagerly evaluated (unlike the old lazy `if()`), which is
+/// fine for all internal call sites.
+@function gx-if($condition, $if-true, $if-false: null) {
+  @if $condition {
+    @return $if-true;
+  }
+  @return $if-false;
+}
+
+/// Parse a "size" argument into a fraction (0..1).
+/// Accepts: a column count (6), a percentage (50%), a fraction string
+/// expressed as a list (`1 of 2`) or a real fraction (1/2 → 0.5).
+///
+/// @param {Number|List} $size
+/// @return {Number} fraction between 0 and 1
+@function gx-fraction($size) {
+  // `1 of 2` style → list of length 3
+  @if meta.type-of($size) == 'list' {
+    @if list.length($size) == 3 and list.nth($size, 2) == 'of' {
+      @return math.div(list.nth($size, 1), list.nth($size, 3));
+    }
+    @error 'gx-fraction(): unsupported list `#{$size}`. Use `1 of 2`.';
+  }
+
+  @if meta.type-of($size) == 'number' {
+    // percentage → fraction
+    @if math.unit($size) == '%' {
+      @return math.div($size, 100%);
+    }
+    // unitless ≤ 1 is already a fraction (e.g. 0.5), otherwise a column count
+    @if math.is-unitless($size) {
+      @if $size <= 1 {
+        @return $size;
+      }
+      @return math.div($size, $flex-columns);
+    }
+  }
+
+  @error 'gx-fraction(): cannot parse size `#{$size}`.';
+}
+
+/// Percentage width/height for a given size.
+/// @param {Number|List} $size
+/// @return {Number} percentage
+@function gx-cell-size($size: $flex-columns) {
+  @return gx-fraction($size) * 100%;
+}
+
+/// var() reference to the horizontal gap (drives `column-gap` & cell width).
+@function gx-gap-x-var() {
+  @return var(--flex-gap-x, 0px);
+}
+
+/// var() reference to the vertical gap (drives `row-gap` & cell height).
+@function gx-gap-y-var() {
+  @return var(--flex-gap-y, 0px);
+}

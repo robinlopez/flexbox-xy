@@ -1,0 +1,273 @@
+// =============================================================================
+// Gridaflex — Public Mixins (semantic API)
+// -----------------------------------------------------------------------------
+// Modern reimplementation of Foundation's XY grid mixins. The `grid` wording is
+// dropped in favour of `flex` (it's a flexbox system, not CSS Grid): the public
+// mixins are `xy-flex*` / `xy-cell*`. The legacy `xy-grid*` names are kept as
+// deprecated aliases at the bottom of this file for Foundation migration.
+// Gutters are produced with `gap` (margin) or inner `padding` — never with
+// negative margins — so they compose cleanly with modern layout code.
+// =============================================================================
+
+@use 'sass:map';
+@use 'sass:math';
+@use 'sass:meta';
+@use 'settings' as *;
+@use 'functions' as *;
+@use 'breakpoints' as *;
+
+// -----------------------------------------------------------------------------
+// Container
+// -----------------------------------------------------------------------------
+
+/// Max-width, centered container for grid content.
+@mixin xy-flex-container($width: $flex-container, $padding: $flex-container-padding) {
+  max-width: $width;
+  margin-inline: auto;
+
+  @if meta.type-of($padding) == 'map' {
+    @each $bp, $value in $padding {
+      @include breakpoint($bp) {
+        padding-inline: calc(#{$value} / 2);
+      }
+    }
+  } @else {
+    padding-inline: calc(#{$padding} / 2);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Grid
+// -----------------------------------------------------------------------------
+
+/// Create a flex grid container.
+/// @param {Keyword} $direction [horizontal] - `horizontal` | `vertical`
+/// @param {Boolean} $wrap [true]
+@mixin xy-flex($direction: horizontal, $wrap: true) {
+  display: flex;
+  flex-flow: gx-if($direction == vertical, column, row) gx-if($wrap, wrap, nowrap);
+}
+
+/// Set a gutter CSS custom property, responsively if given a map.
+@mixin gx-set-gutter($var, $gutters) {
+  @if meta.type-of($gutters) == 'map' {
+    @each $bp, $value in $gutters {
+      @include breakpoint($bp) {
+        #{$var}: $value;
+      }
+    }
+  } @else {
+    #{$var}: $gutters;
+  }
+}
+
+/// Apply margin (gap) gutters to a grid.
+/// @param {Keyword} $axis [x] - `x` (column-gap) | `y` (row-gap) | `xy` (both)
+/// The gap value is exposed as `--gx-gap-x` / `--gx-gap-y` so cell sizes
+/// stay exact automatically (no per-cell override needed).
+@mixin xy-flex-margin($axis: x, $gutters: $flex-margin-gutters) {
+  @if $axis == x or $axis == xy {
+    @include gx-set-gutter(--flex-gap-x, $gutters);
+    column-gap: gx-gap-x-var();
+  }
+  @if $axis == y or $axis == xy {
+    @include gx-set-gutter(--flex-gap-y, $gutters);
+    row-gap: gx-gap-y-var();
+  }
+}
+
+/// Apply padding gutters (inner cell padding). Does NOT touch the gap vars,
+/// so cell widths stay at a clean percentage (border-box). Sets `--flex-pad`
+/// on the track and the matching inner padding on its cells.
+/// @param {Keyword} $axis [x] - `x` (inline) | `y` (block) | `xy` (both)
+@mixin xy-flex-padding($axis: x, $gutters: $flex-padding-gutters) {
+  @include gx-set-gutter(--flex-pad, $gutters);
+  $pad: calc(var(--flex-pad, 0px) / 2);
+  @if $axis == x {
+    > .cell { padding-inline: $pad; }
+  } @else if $axis == y {
+    > .cell { padding-block: $pad; }
+  } @else {
+    > .cell { padding: $pad; }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Cell
+// -----------------------------------------------------------------------------
+
+/// Base flex properties for a cell.
+@mixin xy-cell-base($size: full) {
+  @if $size == auto {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+  } @else if $size == shrink {
+    flex: 0 0 auto;
+  } @else {
+    flex: 0 0 auto;
+  }
+}
+
+/// Size a cell. Pass `auto`, `shrink`, `full`, a column count, a percentage
+/// or a `1 of 2` style fraction.
+///
+/// The size is always gap-aware: it subtracts a share of the active gap var
+/// (`--gx-gap-x` for width, `--gx-gap-y` for height). Outside a gap grid the
+/// var is 0, so the calc reduces to a clean percentage.
+///
+/// @param {Keyword|Number|List} $size
+/// @param {Boolean} $vertical [false] - size height instead of width
+@mixin xy-cell-size($size: full, $vertical: false) {
+  $dimension: gx-if($vertical, height, width);
+  $gap: gx-if($vertical, gx-gap-y-var(), gx-gap-x-var());
+
+  @if $size == auto {
+    #{$dimension}: auto;
+    flex: 1 1 0;
+  } @else if $size == shrink {
+    #{$dimension}: auto;
+    flex: 0 0 auto;
+  } @else {
+    $fraction: 1; // `full`
+    @if $size != full { $fraction: gx-fraction($size); }
+    // Exact gap-aware size: f·100% − (1 − f) · gap
+    #{$dimension}: calc(#{$fraction * 100%} - #{1 - $fraction} * #{$gap});
+  }
+}
+
+/// Full cell helper combining base + size.
+@mixin xy-cell($size: full, $vertical: false) {
+  @include xy-cell-base($size);
+  @include xy-cell-size($size, $vertical);
+}
+
+/// Offset a cell to the right (or bottom when vertical).
+@mixin xy-cell-offset($n, $vertical: false) {
+  $fraction: gx-fraction($n);
+  $prop: gx-if($vertical, margin-top, margin-left);
+  $gap: gx-if($vertical, gx-gap-y-var(), gx-gap-x-var());
+  #{$prop}: calc(#{$fraction * 100%} + #{$fraction} * #{$gap});
+}
+
+// -----------------------------------------------------------------------------
+// Block grid layout
+// -----------------------------------------------------------------------------
+
+/// Size children so that `$n` items fit per row. Gap-aware automatically.
+@mixin xy-flex-layout($n, $selector: '.cell', $vertical: false) {
+  $fraction: math.div(1, $n);
+  $dimension: gx-if($vertical, height, width);
+  $gap: gx-if($vertical, gx-gap-y-var(), gx-gap-x-var());
+  > #{$selector} {
+    flex: 0 0 auto;
+    #{$dimension}: calc(#{$fraction * 100%} - #{1 - $fraction} * #{$gap});
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Frame & blocks (app-like 100vh layouts)
+// -----------------------------------------------------------------------------
+
+/// Give a grid "frame" behavior: full height, no wrap, no overflow.
+@mixin xy-flex-frame($vertical: false, $nested: false) {
+  flex-wrap: nowrap;
+  align-items: stretch;
+  height: gx-if($nested, 100%, 100vh);
+  overflow: hidden;
+  @if $vertical {
+    width: auto;
+  } @else {
+    width: 100%;
+  }
+}
+
+/// Cell that scrolls along the main axis.
+@mixin xy-cell-block($vertical: false) {
+  @if $vertical {
+    overflow-y: auto;
+    height: 100%;
+    min-height: 0;
+  } @else {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  -webkit-overflow-scrolling: touch;
+}
+
+/// Container passing flex sizing constraints to nested blocks.
+@mixin xy-cell-block-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  min-height: 0;
+}
+
+// -----------------------------------------------------------------------------
+// Flexbox alignment helpers
+// -----------------------------------------------------------------------------
+
+$-gx-justify: (
+  'left': flex-start,
+  'right': flex-end,
+  'center': center,
+  'justify': space-between,
+  'spaced': space-around,
+);
+
+$-gx-align: (
+  'top': flex-start,
+  'bottom': flex-end,
+  'middle': center,
+  'stretch': stretch,
+);
+
+@mixin flex-align($x: null, $y: null) {
+  @if $x { justify-content: map.get($-gx-justify, $x); }
+  @if $y { align-items: map.get($-gx-align, $y); }
+}
+
+@mixin flex-align-self($y: null) {
+  @if $y { align-self: map.get($-gx-align, $y); }
+}
+
+@mixin flex-order($order: 0) {
+  order: $order;
+}
+
+// -----------------------------------------------------------------------------
+// Deprecated aliases — Foundation XY Sass API
+// -----------------------------------------------------------------------------
+// The legacy `xy-grid*` mixin names map to their `xy-flex*` equivalents so code
+// migrated from Foundation keeps compiling. Prefer the `xy-flex*` names in new
+// code — these aliases may be removed in a future major version.
+
+/// @deprecated Use `xy-flex-container` instead.
+@mixin xy-grid-container($width: $flex-container, $padding: $flex-container-padding) {
+  @include xy-flex-container($width, $padding);
+}
+
+/// @deprecated Use `xy-flex` instead.
+@mixin xy-grid($direction: horizontal, $wrap: true) {
+  @include xy-flex($direction, $wrap);
+}
+
+/// @deprecated Use `xy-flex-margin` instead.
+@mixin xy-grid-margin($axis: x, $gutters: $flex-margin-gutters) {
+  @include xy-flex-margin($axis, $gutters);
+}
+
+/// @deprecated Use `xy-flex-padding` instead.
+@mixin xy-grid-padding($axis: x, $gutters: $flex-padding-gutters) {
+  @include xy-flex-padding($axis, $gutters);
+}
+
+/// @deprecated Use `xy-flex-layout` instead.
+@mixin xy-grid-layout($n, $selector: '.cell', $vertical: false) {
+  @include xy-flex-layout($n, $selector, $vertical);
+}
+
+/// @deprecated Use `xy-flex-frame` instead.
+@mixin xy-grid-frame($vertical: false, $nested: false) {
+  @include xy-flex-frame($vertical, $nested);
+}

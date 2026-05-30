@@ -1,0 +1,12 @@
+// =============================================================================
+// Gridaflex — Full CSS entry point
+// -----------------------------------------------------------------------------
+// Compile this file to get every utility class:
+//   sass gridaflex.scss dist/gridaflex.css
+//
+// Override settings before the import:
+//   @use 'gridaflex/src/settings' with ($flex-columns: 16);
+//   @use 'gridaflex/src/classes';
+// =============================================================================
+
+@use 'src/classes';

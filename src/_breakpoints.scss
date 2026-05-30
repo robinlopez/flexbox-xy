@@ -1,0 +1,197 @@
+// =============================================================================
+// Grid XY — Breakpoints
+// -----------------------------------------------------------------------------
+// Faithful, modern port of Foundation's `breakpoint()` mixin & function.
+// Supports:
+//   - named breakpoints from $breakpoints (any names you like)
+//   - directions: `up` (default), `down`, `only`
+//   - raw px / rem / em values            → breakpoint(768px down)
+//   - orientation                         → breakpoint(landscape)
+//   - HiDPI / resolution                  → breakpoint(retina)
+//   - optional `print` media type via $print-breakpoint
+// Breakpoint limits are emitted in `em` so they respect browser zoom.
+// =============================================================================
+
+@use 'sass:map';
+@use 'sass:list';
+@use 'sass:meta';
+@use 'sass:math';
+@use 'settings' as *;
+@use 'functions' as *;
+
+// Validate the zero breakpoint.
+@if list.nth(map.values($breakpoints), 1) != 0 {
+  @error 'Grid XY: the first key in $breakpoints must have a value of 0.';
+}
+
+/// Current breakpoint name inside a `breakpoint()` block (for advanced use).
+$gx-current-breakpoint: null;
+
+// -----------------------------------------------------------------------------
+// Helpers
+// -----------------------------------------------------------------------------
+
+@function gx-strip-unit($n) {
+  @return math.div($n, ($n * 0 + 1));
+}
+
+/// Convert a px / rem / unitless value to em (16px base, the media-query std).
+@function gx-to-em($value) {
+  @if $value == 0 { @return 0em; }
+  @if meta.type-of($value) != 'number' { @return $value; }
+  @if math.is-unitless($value) { $value: $value * 1px; }
+  $unit: math.unit($value);
+  @if $unit == 'em' { @return $value; }
+  @if $unit == 'rem' { @return gx-strip-unit($value) * 1em; }
+  @if $unit == 'px' { @return math.div(gx-strip-unit($value), 16) * 1em; }
+  @return $value;
+}
+
+/// Value of the breakpoint following `$name` (or null if it is the last).
+@function gx-bp-next($name) {
+  $names: map.keys($breakpoints);
+  $idx: list.index($names, $name);
+  @if $idx == null or $idx >= list.length($names) { @return null; }
+  @return map.get($breakpoints, list.nth($names, $idx + 1));
+}
+
+/// Next defined HiDPI value strictly greater than `$number`.
+@function gx-hidpi-next($number) {
+  $next: null;
+  @each $k, $v in $breakpoints-hidpi {
+    @if $v > $number and ($next == null or $v < $next) { $next: $v; }
+  }
+  @return $next;
+}
+
+/// Join min/max limits into a media feature string, skipping null/0 limits.
+@function gx-join($min, $max, $min-name: 'min-width', $max-name: 'max-width') {
+  $lo: gx-if($min and $min > 0, '(#{$min-name}: #{$min})', null);
+  $hi: gx-if($max and $max > 0, '(#{$max-name}: #{$max})', null);
+  @if $lo and $hi { @return '#{$lo} and #{$hi}'; }
+  @if $lo { @return $lo; }
+  @if $hi { @return $hi; }
+  @return '';
+}
+
+// -----------------------------------------------------------------------------
+// Media query string builder
+// -----------------------------------------------------------------------------
+
+/// Build the media-query feature string (without the `screen and` prefix)
+/// for a breakpoint value such as `medium`, `medium down`, `768px`, `retina`…
+@function gx-mq($val) {
+  $bp: list.nth($val, 1);
+  $dir: up;
+  @if list.length($val) > 1 { $dir: list.nth($val, 2); }
+
+  // Orientation
+  @if $bp == 'landscape' or $bp == 'portrait' {
+    @return '(orientation: #{$bp})';
+  }
+
+  $name: null;
+  $value: $bp;
+  $hidpi: false;
+
+  @if meta.type-of($bp) == 'string' {
+    @if map.has-key($breakpoints, $bp) {
+      $name: $bp;
+      $value: map.get($breakpoints, $bp);
+    } @else if map.has-key($breakpoints-hidpi, $bp) {
+      $name: $bp;
+      $value: map.get($breakpoints-hidpi, $bp);
+      $hidpi: true;
+    } @else {
+      @warn 'breakpoint(): "#{$val}" is not defined in $breakpoints or $breakpoints-hidpi.';
+      @return null;
+    }
+  }
+
+  @if not $name and $dir == 'only' {
+    @warn 'breakpoint(): only named breakpoints support the `only` range.';
+    @return null;
+  }
+
+  // --- HiDPI / resolution ---------------------------------------------------
+  @if $hidpi {
+    $min: null;
+    $max: null;
+    $next: gx-hidpi-next($value);
+    @if $dir == 'only' or $dir == 'up' { $min: $value; }
+    @if $dir == 'only' or $dir == 'down' {
+      @if not $name { $max: $value; }
+      @else if $next { $max: $next - math.div(1, 96); }
+    }
+    $min-dppx: gx-if($min, '#{$min}dppx', null);
+    $max-dppx: gx-if($max, '#{$max}dppx', null);
+    @return gx-join($min-dppx, $max-dppx, 'min-resolution', 'max-resolution');
+  }
+
+  // --- Width ----------------------------------------------------------------
+  $min: null;
+  $max: null;
+  $next: gx-if($name, gx-bp-next($name), null);
+
+  @if $dir == 'only' or $dir == 'up' {
+    $min: gx-to-em($value);
+  }
+  @if $dir == 'only' or $dir == 'down' {
+    @if not $name {
+      $max: gx-to-em($value);
+    } @else if $next {
+      // 0.00125em ≈ 0.02px under the next breakpoint (zoom-safe precision).
+      $max: gx-to-em($next) - 0.00125em;
+    }
+  }
+
+  @return gx-join($min, $max);
+}
+
+// -----------------------------------------------------------------------------
+// Public: breakpoint() mixin
+// -----------------------------------------------------------------------------
+
+/// Decide whether the `print` media type should be added.
+@function gx-emit-print($name, $dir) {
+  @if $print-breakpoint == null or $name == null { @return false; }
+  @if not map.has-key($breakpoints, $name) { @return false; }
+  @if $dir == down { @return true; }
+  $names: map.keys($breakpoints);
+  $bp: list.index($names, $name);
+  $pbp: list.index($names, $print-breakpoint);
+  @return $bp and $pbp and $bp <= $pbp;
+}
+
+/// Wrap content in one or more media queries.
+/// `breakpoint(small)` (the zero breakpoint, up) outputs the content as-is.
+///
+/// @example
+///   @include breakpoint(phone only)        { … }
+///   @include breakpoint(tablet-portrait)    { … }   // and up
+///   @include breakpoint(desktop down)       { … }
+///   @include breakpoint(768px)              { … }
+///   @include breakpoint(landscape)          { … }
+@mixin breakpoint($values...) {
+  @each $value in $values {
+    $str: gx-mq($value);
+    $name: list.nth($value, 1);
+    $dir: up;
+    @if list.length($value) > 1 { $dir: list.nth($value, 2); }
+
+    $old: $gx-current-breakpoint;
+    $gx-current-breakpoint: $name !global;
+
+    @if $str == null {
+      // invalid breakpoint: already warned, emit nothing
+    } @else if $str == '' {
+      @content;
+    } @else if gx-emit-print($name, $dir) {
+      @media print, screen and #{$str} { @content; }
+    } @else {
+      @media screen and #{$str} { @content; }
+    }
+
+    $gx-current-breakpoint: $old !global;
+  }
+}

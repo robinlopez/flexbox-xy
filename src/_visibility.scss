@@ -1,0 +1,83 @@
+// =============================================================================
+// Grid XY — Responsive visibility
+// -----------------------------------------------------------------------------
+// show-for / hide-for helpers, built on the same breakpoint() engine.
+// Class names follow Foundation: .show-for-<bp>, .hide-for-<bp>,
+// .show-for-<bp>-only, .hide-for-<bp>-only.
+// =============================================================================
+
+@use 'sass:map';
+@use 'sass:list';
+@use 'settings' as *;
+@use 'breakpoints' as bp;
+@use 'functions' as *;
+
+/// Hide by default, show from `$name` and up.
+@mixin show-for($name) {
+  $value: map.get($breakpoints, $name);
+  $max: bp.gx-to-em($value) - 0.00125em;
+  @include bp.breakpoint($max down) {
+    display: none !important;
+  }
+}
+
+/// Show only within the `$name` range.
+@mixin show-for-only($name) {
+  $lower: map.get($breakpoints, $name);
+  $upper: bp.gx-bp-next($name);
+  $lo-em: gx-if(bp.gx-strip-unit($lower) == 0, 0em, bp.gx-to-em($lower) - 0.00125em);
+
+  @if $upper == null {
+    @media screen and (max-width: $lo-em) {
+      display: none !important;
+    }
+  } @else {
+    @media screen and (max-width: $lo-em), screen and (min-width: #{bp.gx-to-em($upper)}) {
+      display: none !important;
+    }
+  }
+}
+
+/// Show by default, hide from `$name` and up.
+@mixin hide-for($name) {
+  @include bp.breakpoint($name) {
+    display: none !important;
+  }
+}
+
+/// Show by default, hide within the `$name` range only.
+@mixin hide-for-only($name) {
+  @include bp.breakpoint($name only) {
+    display: none !important;
+  }
+}
+
+/// Emit the visibility utility classes.
+@mixin gx-visibility-classes {
+  .hide { display: none !important; }
+  .invisible { visibility: hidden !important; }
+  .visible { visibility: visible !important; }
+
+  $zero: list.nth(map.keys($breakpoints), 1);
+
+  @each $name in $breakpoint-classes {
+    @if $name != $zero {
+      .hide-for-#{$name} { @include hide-for($name); }
+      .show-for-#{$name} { @include show-for($name); }
+    }
+    .hide-for-#{$name}-only { @include hide-for-only($name); }
+    .show-for-#{$name}-only { @include show-for-only($name); }
+  }
+
+  // Orientation
+  .show-for-landscape,
+  .hide-for-portrait {
+    display: block !important;
+    @include bp.breakpoint(portrait) { display: none !important; }
+  }
+  .hide-for-landscape,
+  .show-for-portrait {
+    display: none !important;
+    @include bp.breakpoint(portrait) { display: block !important; }
+  }
+}
