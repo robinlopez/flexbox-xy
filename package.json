@@ -1,7 +1,7 @@
 {
   "name": "gridaflex",
   "version": "1.0.0",
-  "description": "Gridaflex — système de mise en page flexbox à axes X/Y, sur un moteur gap sans marges négatives. Hérité de la grille Foundation XY, modernisé.",
+  "description": "Gridaflex : système de mise en page flexbox à axes X/Y, sur un moteur gap sans marges négatives. Hérité de la grille Foundation XY, modernisé.",
   "keywords": [
     "css",
     "scss",

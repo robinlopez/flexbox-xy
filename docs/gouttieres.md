@@ -1,6 +1,6 @@
 # Gouttières & axes
 
-`.flex-gap-x` espace les cellules avec `column-gap` (axe horizontal). `.flex-padding-x` applique un rembourrage interne à chaque cellule.
+`.flex-gap-x` espace les cellules avec `column-gap` (axe horizontal). `.flex-padding-xy` applique un rembourrage interne à chaque cellule.
 
 <div class="gx-demo">
     <div class="flex-x flex-gap-x flex-gap-y">
@@ -8,7 +8,7 @@
       <div class="cell auto alt">flex-gap-x</div>
       <div class="cell auto">flex-gap-x</div>
     </div>
-    <div class="flex-x flex-padding-x flex-gap-y gx-frame">
+    <div class="flex-x flex-gap-xy flex-padding-xy flex-gap-y gx-frame">
       <div class="cell auto"><span class="box">flex-padding-x</span></div>
       <div class="cell auto alt"><span class="box">flex-padding-x</span></div>
       <div class="cell auto"><span class="box">flex-padding-x</span></div>
