@@ -29,7 +29,6 @@
 .flex-gap-x,
 .flex-margin-x {
   --flex-gap-x: 16px;
-  column-gap: var(--flex-gap-x, 0px);
 }
 @media screen and (min-width: 37.5em) {
   .flex-gap-x,
@@ -37,11 +36,14 @@
     --flex-gap-x: 24px;
   }
 }
+.flex-gap-x,
+.flex-margin-x {
+  column-gap: var(--flex-gap-x, 0px);
+}
 
 .flex-gap-y,
 .flex-margin-y {
   --flex-gap-y: 16px;
-  row-gap: var(--flex-gap-y, 0px);
 }
 @media screen and (min-width: 37.5em) {
   .flex-gap-y,
@@ -49,14 +51,15 @@
     --flex-gap-y: 24px;
   }
 }
+.flex-gap-y,
+.flex-margin-y {
+  row-gap: var(--flex-gap-y, 0px);
+}
 
 .flex-gap,
 .flex-gap-xy,
 .flex-margin-xy {
   --flex-gap-x: 16px;
-  column-gap: var(--flex-gap-x, 0px);
-  --flex-gap-y: 16px;
-  row-gap: var(--flex-gap-y, 0px);
 }
 @media screen and (min-width: 37.5em) {
   .flex-gap,
@@ -65,12 +68,23 @@
     --flex-gap-x: 24px;
   }
 }
+.flex-gap,
+.flex-gap-xy,
+.flex-margin-xy {
+  column-gap: var(--flex-gap-x, 0px);
+  --flex-gap-y: 16px;
+}
 @media screen and (min-width: 37.5em) {
   .flex-gap,
   .flex-gap-xy,
   .flex-margin-xy {
     --flex-gap-y: 24px;
   }
+}
+.flex-gap,
+.flex-gap-xy,
+.flex-margin-xy {
+  row-gap: var(--flex-gap-y, 0px);
 }
 
 .flex-gap-sm-x {
